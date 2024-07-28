@@ -170,7 +170,7 @@ function pkcs11_create_cert_req ()
 		
 	local extra_args="-outform PEM"
 	[[ $selfsign -eq 1  ]] && extra_args="-outform DER -x509"
-	local out=`OPENSSL_CONF="$OPENSSL_CONF" "$OPENSSL" req -engine $engine_id -new -utf8 -key "pkcs11:serial=$serial;id=$key_id_ascii" -keyform engine -passin "pass:$PIN" -subj "$subj" ${key_usage+-config openssl_ext.cnf} -out "$req_path" ${extra_args}`;
+	local out=`OPENSSL_CONF="$OPENSSL_CONF" "$OPENSSL" req -engine $engine_id -new -utf8 -key "pkcs11:serial=$serial;id=$key_id_ascii" -keyform engine -passin "pass:$PIN" -subj "$subj" ${key_usage+-config openssl_ext.cnf} -days 365 -out "$req_path" ${extra_args}`;
 		  	
 	[[ ! -f "$req_path" ]] && { echoerr "Can't create self signed cert or req:\n$out"; return 1; }
 		
