@@ -1002,8 +1002,10 @@ function get_cert_data ()
 Организация
 Подразделение
 Общее имя
-Электронная почта"
-	local default_content="`echo -e "Москва\n\n\n\n\n"`"
+Электронная почта
+Срок действия (дней)"
+
+	local default_content="`echo -e "Москва\n\n\n\n\n\n30"`"
 	local checks="Самоподписанный сертификат
 Для цифровой подписи
 Для шифрования данных
@@ -1035,24 +1037,28 @@ function get_cert_data ()
 	email="`echo -e "$res" | sed '6q;d'`"
 	if [[ -n "$email" ]]; then email="/emailAddress=$email"; else email=""; fi
 
+
+	expdays="`echo -e "$res" | sed '7q;d'`"
+	if ! [[ -n "$expdays" ]]; then expdays=30; fi
+
 	local subj="$C$ST$L$O$OU$CN$email"
 	
 	echolog "Cert subj is $subj"
 	echo "$subj"
 
 	echolog "Cert is self-signed: `echo -e "$res" | sed -n 7p`"
-	echo "`echo -e "$res" | sed -n 7p`" # self_signed
+	echo "`echo -e "$res" | sed -n 8p`" # self_signed
 	
 	key_usage=""
-	if [[ "`echo -e "$res" | sed -n 8p`" -eq "1" ]]
+	if [[ "`echo -e "$res" | sed -n 9p`" -eq "1" ]]
 	then
 		key_usage="$key_usage,digitalSignature"
 	fi
-	if [[ "`echo -e "$res" | sed -n 9p`" -eq "1" ]]
+	if [[ "`echo -e "$res" | sed -n 10p`" -eq "1" ]]
         then
                 key_usage="$key_usage,dataEncipherment"
         fi
-	if [[ "`echo -e "$res" | sed -n 10p`" -eq "1" ]]
+	if [[ "`echo -e "$res" | sed -n 11p`" -eq "1" ]]
         then
                 key_usage="$key_usage,keyEncipherment"
         fi
@@ -1066,6 +1072,7 @@ function get_cert_data ()
 
 	echo "$key_usage"
 
+	echo "$expdays"
 	return 0
 }
 
@@ -1079,6 +1086,7 @@ function create_cert_req ()
 	subj="`echo -e "${data}" | sed -n 1p`"
 	self_signed="`echo -e "${data}" | sed -n 2p`"
 	key_usage="`echo -e "${data}" | sed -n 3p`"
+	expdays="`echo -e "${data}" | sed -n 4p`"
 	if [[ $? -ne 0 ]]
 	then
 		echolog "subj is not specified"
@@ -1101,7 +1109,7 @@ function create_cert_req ()
 
 	echolog "Cert req will be saved inside $req_path"
 	
-	pkcs11_create_cert_req "$token" "$key_id" "$subj" "$req_path" "$self_signed" "$key_usage" &
+	pkcs11_create_cert_req "$token" "$key_id" "$subj" "$req_path" "$self_signed" "$key_usage" "$expdays" &
 	show_wait $! "Подождите" "Идет создание заявки"
 	res=$?
 

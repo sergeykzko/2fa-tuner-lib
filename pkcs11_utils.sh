@@ -106,7 +106,7 @@ function get_cert_list ()
 function pkcs11_gen_key ()
 {
 	token=$1
-        key_id=$2
+    key_id=$2
 	type=$3
 	label=$4
 
@@ -138,6 +138,7 @@ function pkcs11_create_cert_req ()
 	local req_path="$4"
 	local selfsign="$5"
 	local key_usage="$6"
+	local expdays="$7"
 
 	echolog "pkcs11_create_cert_req for key_id: $key_id with subj: $subj by path: $req_path on token: $token. Cert is self_signed: $selfsign. keyUsage: $key_usage"
 
@@ -170,8 +171,7 @@ function pkcs11_create_cert_req ()
 		
 	local extra_args="-outform PEM"
 	[[ $selfsign -eq 1  ]] && extra_args="-outform DER -x509"
-	local out=`OPENSSL_CONF="$OPENSSL_CONF" "$OPENSSL" req -engine $engine_id -new -utf8 -key "pkcs11:serial=$serial;id=$key_id_ascii" -keyform engine -passin "pass:$PIN" -subj "$subj" ${key_usage+-config openssl_ext.cnf} -days 365 -out "$req_path" ${extra_args}`;
-		  	
+	local out=`OPENSSL_CONF="$OPENSSL_CONF" "$OPENSSL" req -engine $engine_id -new -utf8 -key "pkcs11:serial=$serial;id=$key_id_ascii" -keyform engine -passin "pass:$PIN" -subj "$subj" ${key_usage+-config openssl_ext.cnf} -days $expdays -out "$req_path" ${extra_args}`;
 	[[ ! -f "$req_path" ]] && { echoerr "Can't create self signed cert or req:\n$out"; return 1; }
 		
 	if [[ $selfsign -eq 1  ]]; then
